@@ -1,16 +1,20 @@
 '''
+Python Base Class Actor
+-------------------------------------------------
+
+This aims to be a simple base class wrapper around
+acting on new messages on a amqp queue. Either a base
+class where a derieved class will overload a stop, start,
+and process or a simple strategy injection for the three.
 '''
 from optparse import OptionParser
 import os
-
 import yaml
-from amqplib import client_0_8 as amqp
-import pynotify
 
 #-------------------------------------------------------------------# 
 # Classes
 #-------------------------------------------------------------------# 
-class NotifyAMQP(object):
+class Actor(object):
     '''
     Monitor a given AMQP stream and put the resulting messages
     on gnome notification alerts.
@@ -25,40 +29,32 @@ class NotifyAMQP(object):
         opts.update(given_opts)
         self.image = os.path.abspath(os.path.join('..', 'resources', 'amqp.jpg'))
         self.title = "New Message On %s" % opts['queue']
-        self.setup()
 
-    def setup(self):
+    def initialize(self):
         ''' Initialize the amqp client
 
         Fix this and prolly just use txamqp
         '''
-        self.conn = amqp.Connection(host="localhost:5672 ",
-            userid=opts['username'], password=opts['password'],
-            virtual_host=opts['vhost'], insist=False)
-        self.chan = connection.channel()
-        self.chan.queue_declare(queue=opts['queue'], durable=True,
-            exclusive=False, auto_delete=False)
-        self.chan.exchange_declare(exchange=opts['exchange'], type="direct",
-            durable=True, auto_delete=False,)
-        self.chan.queue_bind(queue=opts['queue'], exchange=opts['exchange'],
-            routing_key=opts['key'])
+        pass
 
-    def monitor(self, process=lambda x: x):
+    def process(self, process=lambda x: x, action=lambda x: x):
         ''' Monitor a given AMQP stream
 
         :param process: A function that can preprocess the input
         '''
         message = process(message)
-        notify = pynotify.Notification(self.title, message, self.image)
-        notify.show()
+        action(message)
 
-    def stop(self):
+    def shutdown(self):
         ''' Stop the running amqp loop and disconnect from the bus
 
         Register to :INT
         '''
-        self.chan.close()
-        self.conn.close()
+        pass
+
+    #-------------------------------------------------------------------# 
+    # Static Helper Functions
+    #-------------------------------------------------------------------# 
 
     @staticmethod
     def _command_args():
@@ -120,17 +116,6 @@ class NotifyAMQP(object):
         return opts
 
 #-------------------------------------------------------------------# 
-# Helper Functions
-#-------------------------------------------------------------------# 
-def start_server():
-    '''
-    Helper function to start and run the notify process
-    '''
-    options = NotifyAMQP.process()
-    instance = NotifyAMQP(options)
-    instance.monitor()
-
-#-------------------------------------------------------------------# 
 # Exports
 #-------------------------------------------------------------------# 
-__all__ = ['start_server', 'NotifyAMQP']
+__all__ = ['Actor']
